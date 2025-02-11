@@ -146,14 +146,51 @@ class PreTrainer(object):
         self.data_handler.test_dataloader_target.dataset.negative_samples = val_data_target.negative_samples
 
         if not train_config['early_stop']:
-            for epoch_idx in range(train_config['epoch']):
+            for epoch_idx in range(0):
                 # train
                 self.train_epoch(model, epoch_idx)
                 # evaluate
-                self.evaluate(model, epoch_idx)
-                self.evaluate_target(model, epoch_idx)
-            self.test(model)
-            self.save_model(model)
+                if epoch_idx % train_config['test_step'] == 0:
+                    self.evaluate(model, epoch_idx)
+            source_all_user_embeddings = {}
+            trn_loader = self.data_handler.train_dataloader
+            for _, tem in tqdm(enumerate(trn_loader), desc='Save source embeddings', total=len(trn_loader)):
+                batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+                with torch.no_grad():
+                    user_embeddings = model._get_user_embeddings(batch_data)
+                    source_all_user_embeddings.update(user_embeddings)          
+        
+            source_all_user_embeddings = torch.stack(list(source_all_user_embeddings.values()), dim=0)
+            self.logger.log(f"All Source User Embeddings Shape: {source_all_user_embeddings.shape}")
+            source_all_item_embeddings = model._get_all_item_embeddings()
+            self.logger.log(f"All Source Item Embeddings Shape: {source_all_item_embeddings.shape}")
+            save_dir = "./save/{}_{}".format(
+                self.config["data"]["name"], self.config["target_data"]["name"]
+            )
+        
+
+            os.makedirs(save_dir, exist_ok=True)
+            torch.save(source_all_item_embeddings, os.path.join(save_dir, "source_all_item_embeddings.pt"))
+            torch.save(source_all_user_embeddings, os.path.join(save_dir, "source_all_user_embeddings.pt"))
+            torch.save(model._get_item_embeddings_para, os.path.join(save_dir, "source_item_embeddings_para.pt"))
+            target_all_user_embeddings= {}
+            trn_loader = self.data_handler.train_dataloader_target
+            with torch.no_grad():
+                for _, tem in tqdm(enumerate(trn_loader), desc='Save target embeddings', total=len(trn_loader)):
+                    batch_data = list(map(lambda x: x.long().to(configs['device']), tem))
+                    user_embeddings = model._get_target_user_embeddings(batch_data)
+                    target_all_user_embeddings.update(user_embeddings)       
+            target_all_user_embeddings =  torch.stack(list(target_all_user_embeddings.values()), dim=0)
+            
+
+            torch.save(target_all_user_embeddings, os.path.join(save_dir, "target_all_user_embeddings.pt"))
+            self.logger.log(f"All Target User Embeddings Shape: {target_all_user_embeddings.shape}")
+
+            target_all_item_embeddings = model._get_target_item_embeddings()
+            
+            torch.save(target_all_item_embeddings, os.path.join(save_dir, "target_all_item_embeddings.pt"))
+            torch.save(model._get_target_item_embeddings_para, os.path.join(save_dir, "target_item_embeddings_para.pt"))
+            self.logger.log(f"All Target Item Embeddings Shape: {target_all_item_embeddings.shape}")
 
             for epoch_idx in range(train_config['epoch']+train_config['epoch']):
                 # train
@@ -162,8 +199,7 @@ class PreTrainer(object):
                 if epoch_idx % train_config['test_step'] == 0:
                     self.evaluate(model, epoch_idx)
                     self.evaluate_target(model, epoch_idx)
-            self.test(model)
-            self.save_model(model)
+  
             return model
 
         
