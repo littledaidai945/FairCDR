@@ -413,66 +413,6 @@ class GaussianDiffusion(nn.Module):
         return all_result
 
 
-    
-
-
-    # def mutual_training_losses(self, model,reweight=False):
-    #     x_start=self.source_all_embeddings.detach()
-    #     batch_size, device = x_start.size(0), x_start.device
-    #     ts, pt = self.sample_timesteps(batch_size, device, 'importance')
-    #     noise = th.randn_like(x_start)
-    #     if self.noise_scale != 0.:
-    #         x_t = self.q_sample(x_start, ts, noise)
-    #     else:
-    #         x_t = x_start
-
-    #     terms = {}
-    #     model_output = model(x_t, ts)
-    #     target = {
-    #         ModelMeanType.START_X: x_start,
-    #         ModelMeanType.EPSILON: noise,
-    #     }[self.mean_type]
-    #     target_all_embeddings = self.target_all_embeddings.detach()
-    #     target_all_embeddings.requires_grad_(False)
-    #     assert model_output.shape == target.shape == x_start.shape
-
-    #     mmd_loss = self.compute_mmd(model_output, target_all_embeddings)
-
-    #     if reweight == True:
-    #         if self.mean_type == ModelMeanType.START_X:
-    #             weight = self.SNR(ts - 1) - self.SNR(ts)
-    #             weight = th.where((ts == 0), 1.0, weight)
-    #             loss = mmd_loss
-    #         elif self.mean_type == ModelMeanType.EPSILON:
-    #             weight = (1 - self.alphas_cumprod[ts]) / ((1-self.alphas_cumprod_prev[ts])**2 * (1-self.betas[ts]))
-    #             weight = th.where((ts == 0), 1.0, weight)
-    #             likelihood = mean_flat((x_start - self._predict_xstart_from_eps(x_t, ts, model_output))**2 / 2.0)
-    #             loss = th.where((ts == 0), likelihood, mmd_loss)
-    #     else:
-    #         weight = th.tensor([1.0] * len(target)).to(device)
-
-    #     terms["loss"] = weight * loss
-        
-    #     # update Lt_history & Lt_count
-    #     for t, loss in zip(ts, terms["loss"]):
-    #         if self.Lt_count[t] == self.history_num_per_term:
-    #             Lt_history_old = self.Lt_history.clone()
-    #             self.Lt_history[t, :-1] = Lt_history_old[t, 1:]
-    #             self.Lt_history[t, -1] = loss.detach()
-    #         else:
-    #             try:
-    #                 self.Lt_history[t, self.Lt_count[t]] = loss.detach()
-    #                 self.Lt_count[t] += 1
-    #             except:
-    #                 print(t)
-    #                 print(self.Lt_count[t])
-    #                 print(loss)
-    #                 raise ValueError
-
-    #     terms["loss"] /= pt
-    #     return terms
-
-
     def mutual_training_losses(self, model,device,reweight=False):
         target_all_embeddings = self.target_all_embeddings.detach()
         target_all_embeddings.requires_grad_(False)
@@ -539,17 +479,7 @@ def betas_from_linear_variance(steps, variance, max_beta=0.999):
     return np.array(betas)
 
 def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
-    """
-    Create a beta schedule that discretizes the given alpha_t_bar function,
-    which defines the cumulative product of (1-beta) over time from t = [0,1].
-
-    :param num_diffusion_timesteps: the number of betas to produce.
-    :param alpha_bar: a lambda that takes an argument t from 0 to 1 and
-                      produces the cumulative product of (1-beta) up to that
-                      part of the diffusion process.
-    :param max_beta: the maximum beta to use; use values lower than 1 to
-                     prevent singularities.
-    """
+  
     betas = []
     for i in range(num_diffusion_timesteps):
         t1 = i / num_diffusion_timesteps
@@ -558,12 +488,6 @@ def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
     return np.array(betas)
 
 def normal_kl(mean1, logvar1, mean2, logvar2):
-    """
-    Compute the KL divergence between two gaussians.
-
-    Shapes are automatically broadcasted, so batches can be compared to
-    scalars, among other use cases.
-    """
     tensor = None
     for obj in (mean1, logvar1, mean2, logvar2):
         if isinstance(obj, th.Tensor):
@@ -587,7 +511,4 @@ def normal_kl(mean1, logvar1, mean2, logvar2):
     )
 
 def mean_flat(tensor):
-    """
-    Take the mean over all non-batch dimensions.
-    """
     return tensor.mean(dim=list(range(1, len(tensor.shape))))
