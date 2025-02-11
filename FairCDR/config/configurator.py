@@ -3,7 +3,7 @@ import yaml
 import argparse
 
 def parse_configure():
-    parser = argparse.ArgumentParser(description='SSLRec')
+    parser = argparse.ArgumentParser(description='FairCDR')
     parser.add_argument('--model', type=str,default='MAERec', help='Model name')
     parser.add_argument('--dataset', type=int, default=3, help='Dataset name')
     parser.add_argument('--tar_dataset', type=int, default=1, help='tar_Dataset name')
