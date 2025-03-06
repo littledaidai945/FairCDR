@@ -20,6 +20,8 @@ The dataset is divided into three domains (1, 2, 3) based on the "Context Featur
 To obtain user and item representations for the target and source domains, run the following command:  
 ```bash
 python main.py --train_type="pretrain"
-
-To perform fairness transfer in Cross-Domain Recommendation (CDR), use the following command:
-```python main.py --train_type="train"
+```
+To perform fairness and user preferences transfer for Cross-Domain Recommendation, use the following command:
+```bash
+python main.py --train_type="train"
+```
