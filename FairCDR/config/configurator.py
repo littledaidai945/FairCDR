@@ -9,7 +9,7 @@ def parse_configure():
     parser.add_argument('--tar_dataset', type=int, default=1, help='tar_Dataset name')
     parser.add_argument('--device', type=str, default='cuda', help='cpu or cuda')
     parser.add_argument('--cuda', type=str, default='0', help='Device number')
-    parser.add_argument('--train_type', type=str, default='pretrain', help='Device number')
+    parser.add_argument('--train_type', type=str, default='pretrain', help='train_type')
     args = parser.parse_args()
 
     if args.device == 'cuda':
